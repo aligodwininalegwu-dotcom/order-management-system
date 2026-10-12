@@ -1,4 +1,4 @@
-﻿const test = require('node:test');
+const test = require('node:test');
 const assert = require('node:assert');
 const crypto = require('node:crypto');
 
@@ -10,6 +10,9 @@ process.env.PAYSTACK_SECRET_KEY = 'sk_test_secret';
 process.env.CLIENT_URL = 'http://localhost:3000';
 
 const app = require('../server');
+
+// No database in this file: fail queries immediately instead of buffering for 10s.
+require('mongoose').set('bufferCommands', false);
 
 let server;
 let baseUrl;
