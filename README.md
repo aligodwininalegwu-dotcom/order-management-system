@@ -126,12 +126,12 @@ Use Paystack **test** keys. In the Paystack dashboard, set the webhook URL to `h
 
 Recommended free-tier setup: **MongoDB Atlas** (database), **Render** (API), **Vercel** (frontend).
 
-1. **Database.** Create a free M0 cluster on MongoDB Atlas, add a database user, and allow network access from anywhere (). Copy the connection string () and add a database name, e.g. .
-2. **API on Render.** Create a new *Blueprint* from this repository (it reads ) and fill in the secret variables it asks for. Set  to your frontend URL once you have it. Confirm  returns .
-3. **Frontend on Vercel.** Import the repository, set the *Root Directory* to , and add the environment variable . Deploy.
-4. **Connect them.** Put the Vercel URL into  on Render (no trailing slash) and redeploy the API so CORS and payment redirects use it.
-5. **Paystack.** In the Paystack dashboard set the webhook URL to .
-6. **Seed and admin.** From your machine, run the helper scripts against the production database by temporarily setting  in your shell: , then register an account and .
+1. **Database.** Create a free M0 cluster on MongoDB Atlas, add a database user, and allow network access from anywhere (`0.0.0.0/0`). Copy the connection string (`mongodb+srv://...`) and add a database name, e.g. `/online_store_db`.
+2. **API on Render.** Create a new *Blueprint* from this repository (it reads `render.yaml`) and fill in the secret variables it asks for. Set `CLIENT_URL` to your frontend URL once you have it. Confirm `https://<api-host>/api/health` returns `success: true`.
+3. **Frontend on Vercel.** Import the repository, set the *Root Directory* to `frontend`, and add the environment variable `VITE_API_URL=https://<api-host>/api`. Deploy.
+4. **Connect them.** Put the Vercel URL into `CLIENT_URL` on Render (no trailing slash) and redeploy the API so CORS and payment redirects use it.
+5. **Paystack.** In the Paystack dashboard set the webhook URL to `https://<api-host>/api/transactions/webhook`.
+6. **Seed and admin.** From your machine, run the helper scripts against the production database by temporarily setting `MONGO_URI` in your shell: `npm run seed`, then register an account and `npm run make-admin -- you@example.com`.
 
 Render's free tier sleeps after inactivity, so the first request after a pause can take about 30 seconds.
 
