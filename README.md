@@ -66,6 +66,8 @@ npm run dev
 | `PAYSTACK_SECRET_KEY` | From Paystack dashboard → Settings → API Keys & Webhooks |
 | `PAYSTACK_PUBLIC_KEY` | Same page |
 | `CLIENT_URL` | Frontend origin, used for CORS and the payment redirect |
+| `RESEND_API_KEY` | Optional. Enables real emails via [Resend](https://resend.com) |
+| `EMAIL_FROM` | Optional. Sender address, e.g. `Online Store <orders@yourdomain.com>` |
 
 The server refuses to start if a required variable is missing. Generate a secret with:
 
@@ -122,6 +124,6 @@ Use Paystack **test** keys. In the Paystack dashboard, set the webhook URL to `h
 
 ## Production notes
 
-- Set `NODE_ENV=production`. In production the password-reset link is **not** returned in the API response; wire `forgotPassword` to an email provider (e.g. Resend, SendGrid) to deliver it.
+- Set `NODE_ENV=production`. Set `RESEND_API_KEY` and `EMAIL_FROM` (with a verified domain) so password-reset links, payment confirmations, and shipping updates are emailed. Without a key, emails are only logged to the console and, in production, password reset cannot deliver links.
 - Serve the API over HTTPS and build the frontend with `npm run build` (output in `frontend/dist`).
 - Never commit `.env` files.

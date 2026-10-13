@@ -60,8 +60,7 @@ export default function ForgotPassword() {
           ) : (
             <div className="reset-link-box">
               <p>
-                If an account exists for <strong>{email}</strong>, a reset link has been
-                generated.
+                If an account exists for <strong>{email}</strong>, we've sent a reset link. Please check your inbox (and spam folder).
               </p>
               {resetUrl && (
                 <>

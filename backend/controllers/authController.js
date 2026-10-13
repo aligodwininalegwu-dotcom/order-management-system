@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
+const { emailEnabled, sendPasswordReset } = require('../utils/email');
 
 // Coerce to a lowercase string so a JSON body like {"email": {"$gt": ""}}
 // can never reach a Mongo query as an operator object.
@@ -136,17 +137,23 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   const resetUrl = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
 
-  // SECURITY: returning the link to the requester would let anyone take over
-  // any account just by typing its email. It is therefore only exposed
-  // outside production, as a stand-in for email delivery. In production,
-  // send resetUrl with a mail service instead.
+  // SECURITY: the reset link must only ever reach the account owner, so it is
+  // emailed to them and never returned to whoever made the request.
+  if (emailEnabled()) {
+    sendPasswordReset({ to: user.email, name: user.name, resetUrl });
+    return res.status(200).json(genericResetResponse);
+  }
+
+  // No email provider configured. Development only: return the link directly
+  // as a stand-in. In production, withhold it and log a warning instead.
   if (process.env.NODE_ENV === 'production') {
+    console.warn('Password reset requested but RESEND_API_KEY is not set; no email was sent');
     return res.status(200).json(genericResetResponse);
   }
 
   res.status(200).json({
     success: true,
-    message: 'Reset link generated (development only).',
+    message: 'Reset link generated (development only, email not configured).',
     resetUrl,
   });
 });

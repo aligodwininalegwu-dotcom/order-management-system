@@ -3,6 +3,8 @@ const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Transaction = require('../models/Transaction');
+const User = require('../models/User');
+const { sendPaymentReceived } = require('../utils/email');
 
 const PAYSTACK_BASE_URL = 'https://api.paystack.co';
 const PAYSTACK_TIMEOUT_MS = 20000;
@@ -94,6 +96,10 @@ const settleTransaction = async (transaction, paymentData) => {
         order.status = 'processing'; // Move the order forward now that it's paid
       }
       await order.save();
+
+      // Settling only happens once per payment, so this sends a single email.
+      const customer = await User.findById(transaction.user).select('name email');
+      if (customer) sendPaymentReceived({ to: customer.email, name: customer.name, order });
     }
   } else if (['failed', 'abandoned', 'reversed'].includes(paymentData.status)) {
     transaction.status = 'failed';

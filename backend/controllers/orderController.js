@@ -2,6 +2,8 @@
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const { reserveStock, releaseStock } = require('../utils/stock');
+const User = require('../models/User');
+const { sendOrderStatusUpdate } = require('../utils/email');
 
 /**
  * @desc    Create a new order
@@ -201,8 +203,14 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     await releaseStock(order.orderItems);
   }
 
+  const previousStatus = order.status;
   order.status = status;
   const updatedOrder = await order.save();
+
+  if (status !== previousStatus) {
+    const customer = await User.findById(order.user).select('name email');
+    if (customer) sendOrderStatusUpdate({ to: customer.email, name: customer.name, order: updatedOrder });
+  }
 
   res.status(200).json({
     success: true,
