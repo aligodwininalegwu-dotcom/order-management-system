@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { formatNaira } from '../../utils/format';
 
 const emptyForm = {
   name: '',
@@ -98,10 +99,13 @@ export default function AdminProducts() {
 
   return (
     <div className="page">
-      <h1>Manage Products</h1>
+      <div className="page-heading">
+        <h1>Manage products</h1>
+        <p>{products.length} in catalogue</p>
+      </div>
 
       <form onSubmit={handleSubmit} className="admin-form">
-        <h2>{editingId ? 'Edit Product' : 'Add New Product'}</h2>
+        <h2>{editingId ? 'Edit product' : 'Add a new product'}</h2>
         <div className="admin-form-grid">
           <label>
             Name
@@ -123,7 +127,7 @@ export default function AdminProducts() {
             />
           </label>
           <label>
-            Stock Quantity
+            Stock quantity
             <input
               type="number"
               name="stockQuantity"
@@ -139,7 +143,7 @@ export default function AdminProducts() {
           </label>
           <label>
             Image URL (optional)
-            <input name="imageUrl" value={form.imageUrl} onChange={handleChange} />
+            <input name="imageUrl" type="url" value={form.imageUrl} onChange={handleChange} />
           </label>
         </div>
         <label>
@@ -153,11 +157,11 @@ export default function AdminProducts() {
           />
         </label>
 
-        {error && <p className="error-text">{error}</p>}
+        {error && <p className="error-text" role="alert">{error}</p>}
 
         <div className="admin-form-actions">
-          <button type="submit" disabled={saving}>
-            {saving ? 'Saving...' : editingId ? 'Update Product' : 'Add Product'}
+          <button type="submit" className="btn-accent" disabled={saving}>
+            {saving ? 'Saving…' : editingId ? 'Update product' : 'Add product'}
           </button>
           {editingId && (
             <button type="button" className="btn-secondary" onClick={cancelEdit}>
@@ -167,39 +171,48 @@ export default function AdminProducts() {
         </div>
       </form>
 
-      <h2>Existing Products</h2>
+      <div className="page-heading">
+        <h2>Existing products</h2>
+      </div>
+
       {loading ? (
-        <p>Loading...</p>
+        <div className="skeleton" style={{ height: 240 }} aria-hidden="true" />
       ) : (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Stock</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product) => (
-              <tr key={product._id}>
-                <td>{product.name}</td>
-                <td>{product.category}</td>
-                <td>₦{product.price.toLocaleString()}</td>
-                <td>{product.stockQuantity}</td>
-                <td className="admin-table-actions">
-                  <button className="btn-link" onClick={() => startEdit(product)}>
-                    Edit
-                  </button>
-                  <button className="btn-link" onClick={() => handleDelete(product._id)}>
-                    Delete
-                  </button>
-                </td>
+        <div className="table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>
+                  <span className="visually-hidden">Actions</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr key={product._id}>
+                  <td data-label="Name">
+                    <strong>{product.name}</strong>
+                  </td>
+                  <td data-label="Category">{product.category}</td>
+                  <td data-label="Price">{formatNaira(product.price)}</td>
+                  <td data-label="Stock">{product.stockQuantity}</td>
+                  <td data-label="Actions" className="admin-table-actions">
+                    <button type="button" className="btn-link" onClick={() => startEdit(product)}>
+                      Edit
+                    </button>
+                    <button type="button" className="btn-link" onClick={() => handleDelete(product._id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

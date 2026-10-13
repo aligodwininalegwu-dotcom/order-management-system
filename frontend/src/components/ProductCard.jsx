@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { formatNaira, stockLabel } from '../utils/format';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = product.imageUrl && !imageFailed;
+  const stock = stockLabel(product.stockQuantity);
 
   const handleAddToCart = () => {
     addToCart(product);
@@ -15,16 +17,22 @@ export default function ProductCard({ product }) {
   };
 
   return (
-    <div className="product-card">
-      <Link to={`/products/${product._id}`} className="product-card-image">
+    <article className="product-card">
+      <Link
+        to={`/products/${product._id}`}
+        className="product-card-image"
+        aria-label={`View ${product.name}`}
+        tabIndex={-1}
+      >
         {showImage ? (
           <img
             src={product.imageUrl}
             alt={product.name}
+            loading="lazy"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <span className="product-card-image-fallback">
+          <span className="product-card-image-fallback" aria-hidden="true">
             {product.name.charAt(0)}
           </span>
         )}
@@ -38,20 +46,14 @@ export default function ProductCard({ product }) {
         <p className="product-description">{product.description}</p>
 
         <div className="product-card-footer">
-          <span className="product-price">₦{product.price.toLocaleString()}</span>
-          <span
-            className={
-              product.stockQuantity > 0 ? 'product-stock in-stock' : 'product-stock out-of-stock'
-            }
-          >
-            {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
-          </span>
+          <span className="product-price">{formatNaira(product.price)}</span>
+          <span className={`product-stock ${stock.tone}-stock`}>{stock.text}</span>
         </div>
 
         <button disabled={product.stockQuantity === 0} onClick={handleAddToCart}>
-          Add to Cart
+          {product.stockQuantity === 0 ? 'Sold out' : 'Add to cart'}
         </button>
       </div>
-    </div>
+    </article>
   );
 }

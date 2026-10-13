@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -88,6 +89,7 @@ export default function App() {
                   </Routes>
                 </Suspense>
               </main>
+              <Footer />
             </BrowserRouter>
           </ToastProvider>
         </CartProvider>

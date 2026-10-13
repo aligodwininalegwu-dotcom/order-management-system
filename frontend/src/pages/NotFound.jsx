@@ -4,10 +4,13 @@ export default function NotFound() {
   return (
     <div className="page">
       <div className="empty-state">
-        <h1>404 — Page Not Found</h1>
+        <span className="eyebrow">Error 404</span>
+        <h1>Page not found</h1>
         <p>The page you're looking for doesn't exist or may have moved.</p>
         <Link to="/">
-          <button>Back to Home</button>
+          <button type="button" tabIndex={-1}>
+            Back to the store
+          </button>
         </Link>
       </div>
     </div>

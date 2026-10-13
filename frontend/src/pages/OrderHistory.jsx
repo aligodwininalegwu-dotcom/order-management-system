@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-
-const statusColors = {
-  pending: '#a9761a',
-  processing: '#2d6ca6',
-  shipped: '#6b4fa0',
-  delivered: '#1f7a52',
-  cancelled: '#b23a3a',
-};
+import { formatDate, formatNaira } from '../utils/format';
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
@@ -17,18 +10,20 @@ export default function OrderHistory() {
   const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const controller = new AbortController();
+
+    (async () => {
       try {
-        const res = await api.get('/orders/my-orders');
+        const res = await api.get('/orders/my-orders', { signal: controller.signal });
         setOrders(res.data);
       } catch (err) {
-        setError(err.message);
+        if (err.name !== 'AbortError') setError(err.message);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
-    };
+    })();
 
-    fetchOrders();
+    return () => controller.abort();
   }, []);
 
   const handleCancel = async (orderId) => {
@@ -36,12 +31,11 @@ export default function OrderHistory() {
       return;
     }
     setCancellingId(orderId);
+    setError('');
     try {
       await api.put(`/orders/${orderId}/cancel`);
       setOrders((prev) =>
-        prev.map((order) =>
-          order._id === orderId ? { ...order, status: 'cancelled' } : order
-        )
+        prev.map((order) => (order._id === orderId ? { ...order, status: 'cancelled' } : order))
       );
     } catch (err) {
       setError(err.message);
@@ -50,17 +44,26 @@ export default function OrderHistory() {
     }
   };
 
-  if (loading) return <div className="page">Loading orders...</div>;
-  if (error) return <div className="page error-text">{error}</div>;
+  if (loading) {
+    return (
+      <div className="page page-loading" role="status">
+        <span className="spinner" />
+        <span className="visually-hidden">Loading orders…</span>
+      </div>
+    );
+  }
 
-  if (orders.length === 0) {
+  if (!error && orders.length === 0) {
     return (
       <div className="page">
         <div className="empty-state">
+          <span className="eyebrow">Orders</span>
           <h1>No orders yet</h1>
           <p>Your order history will show up here once you make a purchase.</p>
           <Link to="/">
-            <button>Browse Products</button>
+            <button type="button" tabIndex={-1}>
+              Browse products
+            </button>
           </Link>
         </div>
       </div>
@@ -69,65 +72,58 @@ export default function OrderHistory() {
 
   return (
     <div className="page">
-      <h1>My Orders</h1>
+      <div className="page-heading">
+        <h1>My orders</h1>
+        <p>
+          {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+        </p>
+      </div>
+
+      {error && <p className="error-text" role="alert">{error}</p>}
 
       {orders.map((order) => (
-        <div
-          key={order._id}
-          className="order-card"
-          style={{ borderLeftColor: statusColors[order.status] }}
-        >
+        <article key={order._id} className={`order-card status-${order.status}`}>
           <div className="order-card-header">
             <div>
               <span className="order-id">Order #{order._id.slice(-8).toUpperCase()}</span>
-              <span className="order-date">
-                {new Date(order.createdAt).toLocaleDateString('en-NG', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </span>
+              <span className="order-date">{formatDate(order.createdAt)}</span>
             </div>
-            <span
-              className="order-status-badge"
-              style={{ backgroundColor: statusColors[order.status] }}
-            >
-              {order.status}
-            </span>
+            <span className="order-status-badge">{order.status}</span>
           </div>
 
           <div className="order-items-list">
-            {order.orderItems.map((item, idx) => (
-              <div key={idx} className="order-item-row">
-                <div className="order-item-thumb">{item.name.charAt(0)}</div>
+            {order.orderItems.map((item) => (
+              <div key={item.product} className="order-item-row">
+                <div className="order-item-thumb" aria-hidden="true">
+                  {item.name.charAt(0)}
+                </div>
                 <span className="order-item-name">
                   {item.name} × {item.quantity}
                 </span>
-                <span className="order-item-price">
-                  ₦{(item.price * item.quantity).toLocaleString()}
-                </span>
+                <span className="order-item-price">{formatNaira(item.price * item.quantity)}</span>
               </div>
             ))}
           </div>
 
           <div className="order-card-footer">
             <span className={`payment-pill payment-${order.paymentStatus}`}>
-              Payment: {order.paymentStatus}
+              Payment {order.paymentStatus}
             </span>
             <div className="order-card-footer-right">
-              <span className="order-total">Total: ₦{order.totalAmount.toLocaleString()}</span>
+              <span className="order-total">{formatNaira(order.totalAmount)}</span>
               {order.paymentStatus !== 'paid' && order.status !== 'cancelled' && (
                 <button
+                  type="button"
                   className="btn-secondary btn-cancel-order"
                   disabled={cancellingId === order._id}
                   onClick={() => handleCancel(order._id)}
                 >
-                  {cancellingId === order._id ? 'Cancelling...' : 'Cancel Order'}
+                  {cancellingId === order._id ? 'Cancelling…' : 'Cancel order'}
                 </button>
               )}
             </div>
           </div>
-        </div>
+        </article>
       ))}
     </div>
   );
