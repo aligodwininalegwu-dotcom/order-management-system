@@ -5,25 +5,44 @@ const Order = require('../models/Order');
 const Transaction = require('../models/Transaction');
 
 const PAYSTACK_BASE_URL = 'https://api.paystack.co';
-const PAYSTACK_TIMEOUT_MS = 15000;
+const PAYSTACK_TIMEOUT_MS = 20000;
+const PAYSTACK_ATTEMPTS = 3;
 
-/** Calls the Paystack API with a timeout and a consistent error shape. */
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Calls the Paystack API with a timeout and a consistent error shape.
+ * Connection-level failures (DNS hiccups, resets, timeouts) are retried a
+ * couple of times, since they are usually momentary on flaky networks.
+ */
 const paystackRequest = async (path, options = {}) => {
   let response;
-  try {
-    response = await fetch(`${PAYSTACK_BASE_URL}${path}`, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      signal: AbortSignal.timeout(PAYSTACK_TIMEOUT_MS),
-    });
-  } catch (error) {
-    const err = new Error('Could not reach Paystack. Please try again shortly.');
-    err.statusCode = 502;
-    throw err;
+
+  for (let attempt = 1; attempt <= PAYSTACK_ATTEMPTS; attempt += 1) {
+    try {
+      response = await fetch(`${PAYSTACK_BASE_URL}${path}`, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        signal: AbortSignal.timeout(PAYSTACK_TIMEOUT_MS),
+      });
+      break;
+    } catch (error) {
+      const reason = error.cause?.code || error.name || error.message;
+      console.error(`Paystack ${path} attempt ${attempt}/${PAYSTACK_ATTEMPTS} failed: ${reason}`);
+
+      if (attempt === PAYSTACK_ATTEMPTS) {
+        const err = new Error(
+          'Could not reach Paystack. Please check your internet connection and try again.'
+        );
+        err.statusCode = 502;
+        throw err;
+      }
+      await wait(500 * attempt);
+    }
   }
 
   const body = await response.json().catch(() => ({}));
