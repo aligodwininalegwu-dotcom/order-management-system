@@ -98,7 +98,7 @@ export default function AdminProducts() {
   };
 
   return (
-    <div className="page">
+    <div className="admin-section">
       <div className="page-heading">
         <h1>Manage products</h1>
         <p>{products.length} in catalogue</p>

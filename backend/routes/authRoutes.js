@@ -4,6 +4,8 @@ const {
   registerUser,
   loginUser,
   getMe,
+  updateProfile,
+  changePassword,
   forgotPassword,
   resetPassword,
 } = require('../controllers/authController');
@@ -17,6 +19,12 @@ router.post('/login', loginUser);
 
 // GET /api/auth/me - get the logged-in user's own profile (requires token)
 router.get('/me', protect, getMe);
+
+// PUT /api/auth/me - update name, phone, and saved address
+router.put('/me', protect, updateProfile);
+
+// PUT /api/auth/me/password - change password (requires the current one)
+router.put('/me/password', protect, changePassword);
 
 // POST /api/auth/forgot-password - request a password reset link
 router.post('/forgot-password', forgotPassword);

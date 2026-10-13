@@ -11,11 +11,15 @@ A full-stack online store with customer accounts, a product catalogue, order man
 - Browse and search products, view product details
 - Persistent shopping cart (survives page refreshes)
 - Checkout with Paystack, with server-side payment verification
-- Order history, and cancellation of unpaid orders
+- Order history with a step-by-step tracking timeline (placed → paid → processing → shipped → delivered)
+- Retry payment ("Pay now") on any unpaid order, and cancel unpaid orders
+- Account page: edit profile and default address, change password, view payment history
 
 **Admins**
-- Create, edit, delist, and delete products
-- View all orders and move them through `processing → shipped → delivered`
+- Overview dashboard: 30-day revenue with period comparison, order counts, average order value, a 14-day revenue chart, order-status breakdown, recent orders, and low-stock alerts
+- Orders: update fulfilment status (stock is restored automatically on cancellation)
+- Transactions: searchable, filterable ledger of every payment
+- Products: create, edit, delist, and delete
 
 ## Architecture
 
@@ -99,7 +103,8 @@ Use Paystack **test** keys. In the Paystack dashboard, set the webhook URL to `h
 | POST | `/api/auth/register`, `/api/auth/login` | Public |
 | POST | `/api/auth/forgot-password` | Public |
 | PUT | `/api/auth/reset-password/:token` | Public |
-| GET | `/api/auth/me` | User |
+| GET / PUT | `/api/auth/me` | User |
+| PUT | `/api/auth/me/password` | User |
 | GET | `/api/products`, `/api/products/:id` | Public |
 | POST / PUT / DELETE | `/api/products[/:id]` | Admin |
 | POST | `/api/orders` | User |
@@ -108,6 +113,9 @@ Use Paystack **test** keys. In the Paystack dashboard, set the webhook URL to `h
 | GET | `/api/orders` | Admin |
 | PUT | `/api/orders/:id/status` | Admin |
 | POST | `/api/transactions/initialize` | User |
+| GET | `/api/transactions/my` | User |
+| GET | `/api/transactions` | Admin |
+| GET | `/api/admin/stats` | Admin |
 | GET | `/api/transactions/verify/:reference` | Owner / Admin |
 | POST | `/api/transactions/webhook` | Paystack (HMAC signed) |
 | GET | `/api/health` | Public |

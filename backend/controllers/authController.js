@@ -196,4 +196,67 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { registerUser, loginUser, getMe, forgotPassword, resetPassword };
+/**
+ * @desc    Update the logged-in user's profile
+ * @route   PUT /api/auth/me
+ * @access  Private
+ */
+const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  const name = String(req.body.name ?? user.name).trim();
+  if (!name) {
+    res.status(400);
+    throw new Error('Name cannot be empty');
+  }
+
+  user.name = name;
+  if (req.body.phone !== undefined) user.phone = String(req.body.phone).trim();
+  if (req.body.address && typeof req.body.address === 'object') {
+    user.address = {
+      street: String(req.body.address.street ?? '').trim(),
+      city: String(req.body.address.city ?? '').trim(),
+      state: String(req.body.address.state ?? '').trim(),
+    };
+  }
+  await user.save();
+
+  res.status(200).json({ success: true, data: user });
+});
+
+/**
+ * @desc    Change the logged-in user's password
+ * @route   PUT /api/auth/me/password
+ * @access  Private
+ */
+const changePassword = asyncHandler(async (req, res) => {
+  const currentPassword = String(req.body.currentPassword ?? '');
+  const newPassword = String(req.body.newPassword ?? '');
+
+  if (newPassword.length < 6) {
+    res.status(400);
+    throw new Error('New password must be at least 6 characters');
+  }
+
+  const user = await User.findById(req.user._id).select('+password');
+
+  if (!(await user.matchPassword(currentPassword))) {
+    res.status(401);
+    throw new Error('Your current password is incorrect');
+  }
+
+  user.password = newPassword; // Hashed by the pre('save') hook
+  await user.save();
+
+  res.status(200).json({ success: true, message: 'Password updated' });
+});
+
+module.exports = {
+  registerUser,
+  loginUser,
+  getMe,
+  updateProfile,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+};

@@ -72,6 +72,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // --- Error handling middleware (must be registered last) ---
 app.use(notFound);

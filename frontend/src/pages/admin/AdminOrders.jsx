@@ -40,7 +40,7 @@ export default function AdminOrders() {
 
   if (loading) {
     return (
-      <div className="page page-loading" role="status">
+      <div className="page-loading" role="status">
         <span className="spinner" />
         <span className="visually-hidden">Loading orders…</span>
       </div>
@@ -48,7 +48,7 @@ export default function AdminOrders() {
   }
 
   return (
-    <div className="page">
+    <div className="admin-section">
       <div className="page-heading">
         <h1>Manage orders</h1>
         <p>{orders.length} total</p>

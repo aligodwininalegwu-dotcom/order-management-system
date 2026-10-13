@@ -250,4 +250,45 @@ const handleWebhook = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true });
 });
 
-module.exports = { initializeTransaction, verifyTransaction, handleWebhook };
+/**
+ * @desc    Get the logged-in user's payment history
+ * @route   GET /api/transactions/my
+ * @access  Private
+ */
+const getMyTransactions = asyncHandler(async (req, res) => {
+  const transactions = await Transaction.find({ user: req.user._id })
+    .sort({ createdAt: -1 })
+    .select('-paystackResponse')
+    .populate('order', 'totalAmount status orderItems');
+
+  res.status(200).json({ success: true, count: transactions.length, data: transactions });
+});
+
+/**
+ * @desc    Get every transaction (optionally filtered by ?status=)
+ * @route   GET /api/transactions
+ * @access  Private/Admin
+ */
+const getAllTransactions = asyncHandler(async (req, res) => {
+  const query = {};
+  if (['pending', 'success', 'failed'].includes(req.query.status)) {
+    query.status = req.query.status;
+  }
+
+  const transactions = await Transaction.find(query)
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .select('-paystackResponse')
+    .populate('user', 'name email')
+    .populate('order', 'status');
+
+  res.status(200).json({ success: true, count: transactions.length, data: transactions });
+});
+
+module.exports = {
+  initializeTransaction,
+  verifyTransaction,
+  handleWebhook,
+  getMyTransactions,
+  getAllTransactions,
+};

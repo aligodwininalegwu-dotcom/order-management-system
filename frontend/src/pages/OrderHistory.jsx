@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { payForOrder } from '../api/payments';
 import { formatDate, formatNaira } from '../utils/format';
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [cancellingId, setCancellingId] = useState(null);
+  const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -30,7 +31,7 @@ export default function OrderHistory() {
     if (!window.confirm('Cancel this order? This cannot be undone.')) {
       return;
     }
-    setCancellingId(orderId);
+    setBusyId(orderId);
     setError('');
     try {
       await api.put(`/orders/${orderId}/cancel`);
@@ -40,7 +41,18 @@ export default function OrderHistory() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setCancellingId(null);
+      setBusyId(null);
+    }
+  };
+
+  const handlePay = async (orderId) => {
+    setBusyId(orderId);
+    setError('');
+    try {
+      await payForOrder(orderId);
+    } catch (err) {
+      setError(err.message);
+      setBusyId(null);
     }
   };
 
@@ -81,50 +93,68 @@ export default function OrderHistory() {
 
       {error && <p className="error-text" role="alert">{error}</p>}
 
-      {orders.map((order) => (
-        <article key={order._id} className={`order-card status-${order.status}`}>
-          <div className="order-card-header">
-            <div>
-              <span className="order-id">Order #{order._id.slice(-8).toUpperCase()}</span>
-              <span className="order-date">{formatDate(order.createdAt)}</span>
-            </div>
-            <span className="order-status-badge">{order.status}</span>
-          </div>
-
-          <div className="order-items-list">
-            {order.orderItems.map((item) => (
-              <div key={item.product} className="order-item-row">
-                <div className="order-item-thumb" aria-hidden="true">
-                  {item.name.charAt(0)}
-                </div>
-                <span className="order-item-name">
-                  {item.name} × {item.quantity}
-                </span>
-                <span className="order-item-price">{formatNaira(item.price * item.quantity)}</span>
+      {orders.map((order) => {
+        const unpaid = order.paymentStatus !== 'paid' && order.status !== 'cancelled';
+        return (
+          <article key={order._id} className={`order-card status-${order.status}`}>
+            <div className="order-card-header">
+              <div>
+                <Link to={`/orders/${order._id}`} className="order-id order-link">
+                  Order #{order._id.slice(-8).toUpperCase()}
+                </Link>
+                <span className="order-date">{formatDate(order.createdAt)}</span>
               </div>
-            ))}
-          </div>
-
-          <div className="order-card-footer">
-            <span className={`payment-pill payment-${order.paymentStatus}`}>
-              Payment {order.paymentStatus}
-            </span>
-            <div className="order-card-footer-right">
-              <span className="order-total">{formatNaira(order.totalAmount)}</span>
-              {order.paymentStatus !== 'paid' && order.status !== 'cancelled' && (
-                <button
-                  type="button"
-                  className="btn-secondary btn-cancel-order"
-                  disabled={cancellingId === order._id}
-                  onClick={() => handleCancel(order._id)}
-                >
-                  {cancellingId === order._id ? 'Cancelling…' : 'Cancel order'}
-                </button>
-              )}
+              <span className="order-status-badge">{order.status}</span>
             </div>
-          </div>
-        </article>
-      ))}
+
+            <div className="order-items-list">
+              {order.orderItems.map((item) => (
+                <div key={item.product} className="order-item-row">
+                  <div className="order-item-thumb" aria-hidden="true">
+                    {item.name.charAt(0)}
+                  </div>
+                  <span className="order-item-name">
+                    {item.name} × {item.quantity}
+                  </span>
+                  <span className="order-item-price">{formatNaira(item.price * item.quantity)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="order-card-footer">
+              <span className={`payment-pill payment-${order.paymentStatus}`}>
+                Payment {order.paymentStatus}
+              </span>
+              <div className="order-card-footer-right">
+                <span className="order-total">{formatNaira(order.totalAmount)}</span>
+                <Link to={`/orders/${order._id}`} className="btn-link">
+                  Track order
+                </Link>
+                {unpaid && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-secondary btn-cancel-order"
+                      disabled={busyId === order._id}
+                      onClick={() => handleCancel(order._id)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-accent btn-cancel-order"
+                      disabled={busyId === order._id}
+                      onClick={() => handlePay(order._id)}
+                    >
+                      {busyId === order._id ? 'Please wait…' : 'Pay now'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

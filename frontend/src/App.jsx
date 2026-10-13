@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import AdminLayout from './components/AdminLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Pages are loaded on demand so the first visit only downloads what it needs.
@@ -19,9 +20,13 @@ const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const OrderHistory = lazy(() => import('./pages/OrderHistory'));
+const OrderDetail = lazy(() => import('./pages/OrderDetail'));
+const Account = lazy(() => import('./pages/Account'));
 const PaymentCallback = lazy(() => import('./pages/PaymentCallback'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
 const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminTransactions = lazy(() => import('./pages/admin/AdminTransactions'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const PageLoader = () => (
@@ -30,6 +35,8 @@ const PageLoader = () => (
     <span className="visually-hidden">Loading…</span>
   </div>
 );
+
+const protectedPage = (element) => <ProtectedRoute>{element}</ProtectedRoute>;
 
 export default function App() {
   return (
@@ -52,39 +59,27 @@ export default function App() {
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password/:token" element={<ResetPassword />} />
                     <Route path="/cart" element={<Cart />} />
-                    <Route
-                      path="/checkout"
-                      element={
-                        <ProtectedRoute>
-                          <Checkout />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/orders"
-                      element={
-                        <ProtectedRoute>
-                          <OrderHistory />
-                        </ProtectedRoute>
-                      }
-                    />
+                    <Route path="/checkout" element={protectedPage(<Checkout />)} />
+                    <Route path="/orders" element={protectedPage(<OrderHistory />)} />
+                    <Route path="/orders/:id" element={protectedPage(<OrderDetail />)} />
+                    <Route path="/account" element={protectedPage(<Account />)} />
                     <Route path="/payment/callback" element={<PaymentCallback />} />
+
                     <Route
-                      path="/admin/products"
+                      path="/admin"
                       element={
                         <AdminRoute>
-                          <AdminProducts />
+                          <AdminLayout />
                         </AdminRoute>
                       }
-                    />
-                    <Route
-                      path="/admin/orders"
-                      element={
-                        <AdminRoute>
-                          <AdminOrders />
-                        </AdminRoute>
-                      }
-                    />
+                    >
+                      <Route index element={<Navigate to="dashboard" replace />} />
+                      <Route path="dashboard" element={<AdminDashboard />} />
+                      <Route path="orders" element={<AdminOrders />} />
+                      <Route path="transactions" element={<AdminTransactions />} />
+                      <Route path="products" element={<AdminProducts />} />
+                    </Route>
+
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

@@ -36,27 +36,31 @@ export default function Navbar() {
 
       <div id="navbar-links" className={`navbar-links${open ? ' is-open' : ''}`} onClick={closeMenu}>
         <NavLink to="/" end>
-          Products
+          Shop
         </NavLink>
-        <NavLink to="/cart">Cart ({itemCount})</NavLink>
+        {user && <NavLink to="/orders">Orders</NavLink>}
+        {user?.role === 'admin' && <NavLink to="/admin">Admin</NavLink>}
+        <NavLink to="/cart" className="navbar-cart">
+          Cart
+          <span className="cart-count" aria-label={`${itemCount} items`}>
+            {itemCount}
+          </span>
+        </NavLink>
         {user ? (
           <>
-            <NavLink to="/orders">My Orders</NavLink>
-            {user.role === 'admin' && (
-              <>
-                <NavLink to="/admin/products">Admin: Products</NavLink>
-                <NavLink to="/admin/orders">Admin: Orders</NavLink>
-              </>
-            )}
-            <span className="navbar-user">Hi, {user.name}</span>
+            <NavLink to="/account" className="navbar-user-link">
+              {user.name.split(' ')[0]}
+            </NavLink>
             <button type="button" onClick={handleLogout} className="btn-link">
               Logout
             </button>
           </>
         ) : (
           <>
-            <NavLink to="/login">Login</NavLink>
-            <NavLink to="/register">Register</NavLink>
+            <NavLink to="/login">Log in</NavLink>
+            <NavLink to="/register" className="navbar-signup">
+              Sign up
+            </NavLink>
           </>
         )}
       </div>

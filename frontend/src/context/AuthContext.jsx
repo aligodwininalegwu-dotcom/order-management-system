@@ -55,6 +55,12 @@ export function AuthProvider({ children }) {
       // Used after a successful password reset, where the backend returns a
       // fresh token/user just like login/register do.
       refreshSession: persistSession,
+      // Merge changed profile fields (e.g. name) into the saved session.
+      updateUser: (patch) => {
+        const next = { ...user, ...patch };
+        localStorage.setItem('user', JSON.stringify(next));
+        setUser(next);
+      },
     }),
     [user, logout, persistSession]
   );

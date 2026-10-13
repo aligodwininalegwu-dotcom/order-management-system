@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import ProductCard from '../components/ProductCard';
 
 const SORTS = {
@@ -27,6 +29,36 @@ const TRUST_POINTS = [
   },
 ];
 
+const STEPS = [
+  { title: 'Browse', text: 'Explore the collection and add your favourites to the cart.' },
+  { title: 'Check out securely', text: 'Enter your delivery details and pay through Paystack.' },
+  { title: 'Track your order', text: 'Follow it from confirmation to delivery in your account.' },
+  { title: 'Receive & enjoy', text: 'Your order arrives at your door. Reorder anytime.' },
+];
+
+const FAQS = [
+  {
+    q: 'How do I pay?',
+    a: 'Payment is handled on Paystack’s secure checkout, which supports cards and the other methods Paystack offers. We never see or store your card details.',
+  },
+  {
+    q: 'What if my payment fails or I close the page?',
+    a: 'Nothing is lost. Your order stays in your account with the items reserved, and you can use “Pay now” from the order page to try again.',
+  },
+  {
+    q: 'Can I cancel an order?',
+    a: 'Yes. Orders that have not been paid for can be cancelled from your orders page, and the items go back into stock. For paid orders, please contact support.',
+  },
+  {
+    q: 'How do I track my order?',
+    a: 'Open “Orders” after logging in and choose “Track order”. You will see each stage: placed, paid, processing, shipped and delivered.',
+  },
+  {
+    q: 'Are the prices and stock levels accurate?',
+    a: 'Yes. Prices and availability come straight from our system at the moment you check out, so what you see is what you pay.',
+  },
+];
+
 function SearchIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -37,6 +69,7 @@ function SearchIcon() {
 }
 
 export default function Home() {
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,10 +94,19 @@ export default function Home() {
     return () => controller.abort();
   }, []);
 
-  const categories = useMemo(
-    () => ['All', ...new Set(products.map((product) => product.category))],
-    [products]
-  );
+  // One tile per category, illustrated by the first product that has an image.
+  const categoryTiles = useMemo(() => {
+    const groups = new Map();
+    products.forEach((product) => {
+      const group = groups.get(product.category) || { name: product.category, count: 0, image: '' };
+      group.count += 1;
+      if (!group.image && product.imageUrl) group.image = product.imageUrl;
+      groups.set(product.category, group);
+    });
+    return [...groups.values()];
+  }, [products]);
+
+  const categories = useMemo(() => ['All', ...categoryTiles.map((tile) => tile.name)], [categoryTiles]);
 
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -79,6 +121,11 @@ export default function Home() {
     return compare ? [...filtered].sort(compare) : filtered;
   }, [products, search, category, sort]);
 
+  const showCategory = (name) => {
+    setCategory(name);
+    document.getElementById('catalogue')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const countLabel = loading
     ? 'Loading products…'
     : `${visible.length} ${visible.length === 1 ? 'product' : 'products'}`;
@@ -88,16 +135,21 @@ export default function Home() {
       <section className="hero" aria-labelledby="hero-title">
         <span className="eyebrow">The collection</span>
         <h1 id="hero-title">
-          Everything you need, <em>delivered</em> with care.
+          Refined essentials, <em>delivered</em> with care.
         </h1>
         <p>
-          Considered products at honest prices, with transparent stock levels and a secure,
-          effortless checkout.
+          Considered products at honest prices, with live stock levels, secure payments and
+          tracking for every order.
         </p>
         <div className="hero-actions">
           <a href="#catalogue" className="hero-cta">
             Shop now <span aria-hidden="true">→</span>
           </a>
+          {!user && (
+            <Link to="/register" className="hero-cta hero-cta-ghost">
+              Create an account
+            </Link>
+          )}
         </div>
       </section>
 
@@ -115,10 +167,36 @@ export default function Home() {
         ))}
       </ul>
 
-      <section id="catalogue" aria-labelledby="catalogue-title">
+      {categoryTiles.length > 1 && (
+        <section className="home-section" aria-labelledby="categories-title">
+          <div className="section-head">
+            <span className="eyebrow">Browse</span>
+            <h2 id="categories-title">Shop by category</h2>
+          </div>
+          <div className="category-grid">
+            {categoryTiles.map((tile) => (
+              <button
+                key={tile.name}
+                type="button"
+                className="category-tile"
+                onClick={() => showCategory(tile.name)}
+                style={tile.image ? { '--tile-image': `url("${tile.image}")` } : undefined}
+              >
+                <span className="category-name">{tile.name}</span>
+                <span className="category-count">
+                  {tile.count} {tile.count === 1 ? 'product' : 'products'} <span aria-hidden="true">→</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section id="catalogue" className="home-section" aria-labelledby="catalogue-title">
         <div className="catalogue-head">
           <div>
-            <h2 id="catalogue-title">Shop the collection</h2>
+            <span className="eyebrow">The collection</span>
+            <h2 id="catalogue-title">All products</h2>
             <p aria-live="polite">{countLabel}</p>
           </div>
 
@@ -199,6 +277,51 @@ export default function Home() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="home-section" aria-labelledby="how-title">
+        <div className="section-head section-head-center">
+          <span className="eyebrow">How it works</span>
+          <h2 id="how-title">From cart to doorstep, in four steps</h2>
+        </div>
+        <ol className="steps">
+          {STEPS.map((step, index) => (
+            <li key={step.title} className="step">
+              <span className="step-number">{String(index + 1).padStart(2, '0')}</span>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section id="faq" className="home-section faq-section" aria-labelledby="faq-title">
+        <div className="section-head">
+          <span className="eyebrow">Support</span>
+          <h2 id="faq-title">Questions, answered</h2>
+        </div>
+        <div className="faq-list">
+          {FAQS.map((item) => (
+            <details key={item.q} className="faq-item">
+              <summary>{item.q}</summary>
+              <p>{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section className="cta-band" aria-labelledby="cta-title">
+        <div>
+          <h2 id="cta-title">{user ? 'Welcome back.' : 'Ready when you are.'}</h2>
+          <p>
+            {user
+              ? 'Pick up where you left off and follow your orders in one place.'
+              : 'Create a free account to check out faster and track every order.'}
+          </p>
+        </div>
+        <Link to={user ? '/orders' : '/register'} className="hero-cta">
+          {user ? 'View my orders' : 'Create an account'} <span aria-hidden="true">→</span>
+        </Link>
       </section>
     </div>
   );
