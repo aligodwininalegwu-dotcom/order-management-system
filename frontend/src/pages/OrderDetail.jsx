@@ -191,6 +191,11 @@ export default function OrderDetail() {
             <p className="panel-note">
               Payments are processed securely by Paystack. We never see or store your card details.
             </p>
+            {order.paymentStatus === 'paid' && (
+              <Link to={`/orders/${order._id}/receipt`} className="receipt-link">
+                View receipt
+              </Link>
+            )}
             {!cancelled && order.paymentStatus !== 'paid' && (
               <button type="button" className="btn-secondary btn-block" onClick={handleCancel} disabled={busy}>
                 Cancel order

@@ -21,6 +21,7 @@ const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const OrderHistory = lazy(() => import('./pages/OrderHistory'));
 const OrderDetail = lazy(() => import('./pages/OrderDetail'));
+const Receipt = lazy(() => import('./pages/Receipt'));
 const Account = lazy(() => import('./pages/Account'));
 const PaymentCallback = lazy(() => import('./pages/PaymentCallback'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -62,6 +63,7 @@ export default function App() {
                     <Route path="/checkout" element={protectedPage(<Checkout />)} />
                     <Route path="/orders" element={protectedPage(<OrderHistory />)} />
                     <Route path="/orders/:id" element={protectedPage(<OrderDetail />)} />
+                    <Route path="/orders/:id/receipt" element={protectedPage(<Receipt />)} />
                     <Route path="/account" element={protectedPage(<Account />)} />
                     <Route path="/payment/callback" element={<PaymentCallback />} />
 

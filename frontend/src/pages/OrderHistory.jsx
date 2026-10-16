@@ -130,6 +130,11 @@ export default function OrderHistory() {
                 <Link to={`/orders/${order._id}`} className="btn-link">
                   Track order
                 </Link>
+                {order.paymentStatus === 'paid' && (
+                  <Link to={`/orders/${order._id}/receipt`} className="btn-link">
+                    Receipt
+                  </Link>
+                )}
                 {unpaid && (
                   <>
                     <button

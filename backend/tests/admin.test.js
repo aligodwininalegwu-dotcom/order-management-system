@@ -126,6 +126,18 @@ test('customers only see their own payment history; admins see all', async () =>
   assert.deepStrictEqual(failed.body.data.map((t) => t.reference), ['ref-2']);
 });
 
+test('an order includes its confirmed payment for receipts, and only for its owner or an admin', async () => {
+  const order = await Order.findOne();
+
+  const owner = await call(`/api/orders/${order._id}`, { token: customer.token });
+  assert.strictEqual(owner.status, 200);
+  assert.strictEqual(owner.body.data.payment.reference, 'ref-1'); // the successful one, not the failed ref-2
+  assert.strictEqual(owner.body.data.payment.amount, 1000);
+
+  assert.strictEqual((await call(`/api/orders/${order._id}`, { token: admin.token })).status, 200);
+  assert.strictEqual((await call(`/api/orders/${order._id}`, { token: other.token })).status, 403);
+});
+
 test('profile can be updated, but role cannot be changed through it', async () => {
   const res = await call('/api/auth/me', {
     method: 'PUT',

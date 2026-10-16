@@ -1,6 +1,7 @@
 ﻿const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
+const Transaction = require('../models/Transaction');
 const { reserveStock, releaseStock } = require('../utils/stock');
 const User = require('../models/User');
 const { sendOrderStatusUpdate } = require('../utils/email');
@@ -143,9 +144,14 @@ const getOrderById = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to view this order');
   }
 
+  // Attach the confirmed payment (if any) so receipts can show how it was paid.
+  const payment = await Transaction.findOne({ order: order._id, status: 'success' }).select(
+    'reference paymentMethod paidAt amount'
+  );
+
   res.status(200).json({
     success: true,
-    data: order,
+    data: { ...order.toObject(), payment },
   });
 });
 
